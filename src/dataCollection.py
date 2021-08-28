@@ -23,24 +23,33 @@ import rospy
 
 from sensor_msgs.msg import Image
 
-rospy.init_node('datacollector', anonymous=True)
-print('** Enter every value as string **')
-proj_name = str(input('Enter Project Name: '))
-ros_topic_name = (input('Enter ROS topic name of camera: '))
-image_type = (input('Enter Image Type: '))
-camera_name = (input('Camera Name: '))
-cred_path = (input('Input path to service account credentials json: '))
-category_valid = (input('Upload data in different categories? Y or N : '))
-if category_valid == 'Y':
-    category = str(input('Input Category Name: '))
+rospy.init_node('dataCollection', anonymous=True)
 
-resize_q = input('Resize? Y or N ')
-if resize_q == 'Y':
-    image_size = input('Enter target size(Width,Height): ')
-crop_q = input('Crop? Y or N ')
-if crop_q == 'Y':
-    crop_size = input('Enter target size(x,y,width,height): ')
-grayscale = input('Grayscale? Y or N ')
+proj_name = rospy.get_param('~proj_name')
+ros_topic_name = rospy.get_param('~ros_topic_name')
+image_type = rospy.get_param('~image_type')
+camera_name = rospy.get_param('~camera_name')
+cred_path = rospy.get_param('~cred_path')
+try:
+    category_valid = True
+    category = rospy.get_param('~category')
+except:
+    category_valid = False
+
+try:
+    resize_q = True
+    image_size = rospy.get_param('~image_size')
+except:
+    resize_q = False
+
+try:
+    crop_q = True
+    crop_size = rospy.get_param('~crop_size')
+except:
+    crop_q = False
+
+grayscale = rospy.get_param('~grayscale')
+
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = cred_path
 
@@ -54,7 +63,7 @@ else:
     try:
         client.create_bucket(proj_bucket, location='us-central1')
     except Exception as e:
-        print("bucket_creation"+e)
+        print(e)
 uploader_obj = RobroBucketImageUploader(
     proj_name, image_type, proj_name, cred_path)
 
@@ -68,19 +77,19 @@ def imageRecievedCallback(data):
     try:
         cv_image = CvBridge().imgmsg_to_cv2(data, 'passthrough')
     except CvBridgeError as e:
-        print("CvBridgeError"+e)
-    if resize_q == 'Y':
+        print(e)
+    if resize_q:
         dim = (int(image_size.split(',')[0]), int(image_size.split(',')[1]))
         cv_image = cv2.resize(cv_image, dim, interpolation=cv2.INTER_AREA)
-    if crop_q == 'Y':
+    if crop_q:
         cv_image = cv_image[
             int(crop_size.split(',')[1]):
             int(crop_size.split(',')[1])+int(crop_size.split(',')[3]),
             int(crop_size.split(',')[0]):int(crop_size.split(',')[0])
             + int(crop_size.split(',')[2])]
-    if grayscale == 'Y':
+    if grayscale:
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-    if category_valid == 'Y':
+    if category_valid:
         uploader_obj.addToUploadQueue(cv_image, camera_name, category)
     else:
         uploader_obj.addToUploadQueue(cv_image, camera_name)

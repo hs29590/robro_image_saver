@@ -1,0 +1,15 @@
+<launch>
+	<arg name="package_name" value="robro_image_saver" />
+	
+	<node name="dataCollection" pkg="$(arg package_name)" type="dataCollection.py" output="screen" respawn="false">
+		<param name="proj_name" value="ros_testing" />
+		<param name="ros_topic_name" value="robrocloud/image" />
+		<param name="image_type" value="jpeg" />
+		<param name="camera_name" value="cam_4" />
+		<param name="cred_path" value="/home/robro/cred.json" />
+                <param name="category" value="overflow" />
+                <param name="image_size" value="100,100" />
+                <param name="crop_size" value="50,50,100,100" />
+                <param name="grayscale" value="False" />
+	</node>
+</launch>
