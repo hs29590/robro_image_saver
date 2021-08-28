@@ -54,13 +54,9 @@ else:
     try:
         client.create_bucket(proj_bucket, location='us-central1')
     except Exception as e:
-        print(e)
-if category_valid == 'Y':
-    uploader_obj = RobroBucketImageUploader(
-        proj_name, image_type, proj_name, camera_name, cred_path,category)
-else:
-    uploader_obj = RobroBucketImageUploader(
-        proj_name, image_type, proj_name, camera_name, cred_path)
+        print("bucket_creation"+e)
+uploader_obj = RobroBucketImageUploader(
+    proj_name, image_type, proj_name, cred_path)
 
 
 def imageRecievedCallback(data):
@@ -72,7 +68,7 @@ def imageRecievedCallback(data):
     try:
         cv_image = CvBridge().imgmsg_to_cv2(data, 'passthrough')
     except CvBridgeError as e:
-        print(e)
+        print("CvBridgeError"+e)
     if resize_q == 'Y':
         dim = (int(image_size.split(',')[0]), int(image_size.split(',')[1]))
         cv_image = cv2.resize(cv_image, dim, interpolation=cv2.INTER_AREA)
@@ -84,7 +80,10 @@ def imageRecievedCallback(data):
             + int(crop_size.split(',')[2])]
     if grayscale == 'Y':
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-    uploader_obj.addToUploadQueue(cv_image)
+    if category_valid == 'Y':
+        uploader_obj.addToUploadQueue(cv_image, camera_name, category)
+    else:
+        uploader_obj.addToUploadQueue(cv_image, camera_name)
 
 
 image_sub = rospy.Subscriber(ros_topic_name, Image, imageRecievedCallback)
