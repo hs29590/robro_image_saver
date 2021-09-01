@@ -3,7 +3,8 @@
 	
 	<node name="dataCollection" pkg="$(arg package_name)" type="dataCollection.py" output="screen" respawn="false">
 		<param name="proj_name" value="ros_testing" />
-		<param name="ros_topic_name" value="robrocloud/image" />
+		<param name="image_topic_name" value="robrocloud/image" />
+		<param name="category_topic_name" value="cat" />
 		<param name="image_type" value="jpeg" />
 		<param name="camera_name" value="cam_4" />
 		<param name="cred_path" value="/home/robro/cred.json" />
