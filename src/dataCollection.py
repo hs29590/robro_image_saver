@@ -28,10 +28,13 @@ from std_msgs.msg import String
 rospy.init_node('dataCollection', anonymous=True)
 
 proj_name = rospy.get_param('~proj_name')
-ros_topic_name = rospy.get_param('~ros_topic_name')
+image_topic_name = rospy.get_param('~image_topic_name')
 image_type = rospy.get_param('~image_type')
 camera_name = rospy.get_param('~camera_name')
 cred_path = rospy.get_param('~cred_path')
+grayscale = rospy.get_param('~grayscale')
+storage_class = rospy.get_param('~storage_class')
+storage_location = rospy.get_param('~storage_location')
 category = 'DEFAULT'
 try:
     category_param_valid = True
@@ -57,22 +60,19 @@ try:
 except:
     crop_q = False
 
-grayscale = rospy.get_param('~grayscale')
-
-
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = cred_path
 
 client = storage.Client()
 proj_bucket = client.bucket(proj_name)
 if proj_bucket.exists():
-    print('bucket exists')
+    rospy.logdebug('bucket exists')
 else:
-    print('bucket does not exists, creating bucket..')
-    proj_bucket.storage_class = 'STANDARD'
+    rospy.logdebug('bucket does not exists, creating bucket..')
+    proj_bucket.storage_class = storage_class
     try:
-        client.create_bucket(proj_bucket, location='us-central1')
+        client.create_bucket(proj_bucket, location=storage_location)
     except Exception as e:
-        print(e)
+        rospy.logerr(e)
 uploader_obj = RobroBucketImageUploader(
     proj_name, image_type, proj_name, cred_path)
 
@@ -83,7 +83,7 @@ def categoryRecievedCallback(data):
     Args:
         data ([String])
     """
-    print('Recieved new Category')
+    rospy.logdebug('Recieved new Category')
     global category
     category = data.data
 
@@ -94,11 +94,11 @@ def imageRecievedCallback(data):
     Args:
         data ([ROS Image])
     """
-    print('Recieved Image')
+    rospy.logdebug('Recieved Image')
     try:
         cv_image = CvBridge().imgmsg_to_cv2(data, 'passthrough')
     except CvBridgeError as e:
-        print(e)
+        rospy.logerr(e)
     if crop_q:
         cv_image = cv_image[
             int(crop_size.split(',')[1]):
@@ -116,7 +116,7 @@ def imageRecievedCallback(data):
         uploader_obj.addToUploadQueue(cv_image, camera_name)
 
 
-image_sub = rospy.Subscriber(ros_topic_name, Image, imageRecievedCallback)
+image_sub = rospy.Subscriber(image_topic_name, Image, imageRecievedCallback)
 if category_topic_valid:
     category_sub = rospy.Subscriber(
         category_topic_name, String, categoryRecievedCallback)
