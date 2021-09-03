@@ -4,8 +4,7 @@
 
 @author Ayush Saini
 @email ayush@robrosystems.com
-@brief Data Collection using ROS Topic
-@version 0.1.0
+@brief Sending image to GCP bucket recieved thrugh ROS Topic
 @date 2021-08-28
 @copyright Copyright (c) 2021
 """
@@ -27,10 +26,10 @@ from std_msgs.msg import String
 
 
 class DataCollection:
-    """Data Collection using ROS Topic."""
+    """Sending image to GCP bucket recieved thrugh ROS Topic."""
 
     def __init__(self):
-        """Initialize ROS node, get parameters , initialise cloud library."""
+        """Get parameters, Initialize ROS node."""
         rospy.init_node('dataCollection', anonymous=True)
         proj_name = rospy.get_param('~proj_name')
         image_topic_name = rospy.get_param('~image_topic_name')
@@ -53,10 +52,6 @@ class DataCollection:
         except:
             category_topic_valid = False
 
-        if(category_topic_valid):
-            rospy.Subscriber(
-                category_topic_name, String, self.categoryRecievedCallback)
-
         try:
             self.resize_q = True
             self.image_size = rospy.get_param('~image_size')
@@ -68,6 +63,16 @@ class DataCollection:
             self.crop_size = rospy.get_param('~crop_size')
         except:
             self.crop_q = False
+
+        self.__cloud_init(
+            cred_path, proj_name, storage_class, storage_location, image_type)
+        if(category_topic_valid):
+            rospy.Subscriber(
+                category_topic_name, String, self.__categoryRecievedCallback)
+        rospy.Subscriber(image_topic_name, Image, self.__imageRecievedCallback)
+
+    def __cloud_init(self, cred_path, proj_name, storage_class,
+                     storage_location, image_type):
 
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = cred_path
 
@@ -85,10 +90,8 @@ class DataCollection:
         self.uploader_obj = RobroBucketImageUploader(
             proj_name, image_type, proj_name, cred_path)
 
-        rospy.Subscriber(image_topic_name, Image, self.imageRecievedCallback)
-
-    def categoryRecievedCallback(self, data):
-        """Recieves Category of image.
+    def __categoryRecievedCallback(self, data):
+        """Recieves Category of image, updates category for image upload.
 
         Args:
             data ([String])
@@ -96,7 +99,7 @@ class DataCollection:
         rospy.logdebug('Recieved new Category')
         self.category = data.data
 
-    def imageRecievedCallback(self, data):
+    def __imageRecievedCallback(self, data):
         """Recieves ROS image converts to CV Image, apply transformations and upload.
 
         Args:
