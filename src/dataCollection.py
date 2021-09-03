@@ -5,23 +5,17 @@
 @author Ayush Saini
 @email ayush@robrosystems.com
 @brief Sending image to GCP bucket recieved thrugh ROS Topic
+@version 0.1.0
 @date 2021-08-28
 @copyright Copyright (c) 2021
 """
 import os
-
 import cv2
-
 from cv_bridge import CvBridge, CvBridgeError
-
 from google.cloud import storage
-
 from robro_cloud.robroBucketImageUploader import RobroBucketImageUploader
-
 import rospy
-
 from sensor_msgs.msg import Image
-
 from std_msgs.msg import String
 
 
@@ -43,25 +37,25 @@ class DataCollection:
         try:
             self.category_param_valid = True
             self.category = rospy.get_param('~category')
-        except:
+        except Exception:
             self.category_param_valid = False
 
         try:
             category_topic_valid = True
             category_topic_name = rospy.get_param('~category_topic_name')
-        except:
+        except Exception:
             category_topic_valid = False
 
         try:
             self.resize_q = True
             self.image_size = rospy.get_param('~image_size')
-        except:
+        except Exception:
             self.resize_q = False
 
         try:
             self.crop_q = True
             self.crop_size = rospy.get_param('~crop_size')
-        except:
+        except Exception:
             self.crop_q = False
 
         self.__cloud_init(
@@ -134,4 +128,3 @@ class DataCollection:
 if __name__ == '__main__':
     DataCollection()
     rospy.spin()
-
