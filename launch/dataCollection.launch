@@ -3,6 +3,7 @@
 	
 	<node name="dataCollection" pkg="$(arg package_name)" type="dataCollection.py" output="screen" respawn="false">
 		<param name="proj_name" value="ros_testing" />
+                <param name="triggers_to_ignore" value="4" />
 		<param name="storage_class" value="STANDARD" />
 		<param name="storage_location" value="us-central1" />
 		<param name="image_topic_name" value="robrocloud/image" />
