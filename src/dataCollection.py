@@ -13,7 +13,7 @@ import os
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from google.cloud import storage
-from robro_cloud.robroBucketImageUploader import RobroBucketImageUploader
+from robroCloud import BucketImageUploader
 import rospy
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
@@ -29,11 +29,13 @@ class DataCollection:
         image_topic_name = rospy.get_param('~image_topic_name')
         image_type = rospy.get_param('~image_type')
         self.camera_name = rospy.get_param('~camera_name')
+        self.triggers_to_ignore = rospy.get_param('~triggers_to_ignore')
         cred_path = rospy.get_param('~cred_path')
         self.grayscale = rospy.get_param('~grayscale')
         storage_class = rospy.get_param('~storage_class')
         storage_location = rospy.get_param('~storage_location')
         self.category = 'DEFAULT'
+        self.trigger_count = 0
         try:
             self.category_param_valid = True
             self.category = rospy.get_param('~category')
@@ -81,7 +83,7 @@ class DataCollection:
                 client.create_bucket(proj_bucket, location=storage_location)
             except Exception as e:
                 rospy.logerr(e)
-        self.uploader_obj = RobroBucketImageUploader(
+        self.uploader_obj = BucketImageUploader(
             proj_name, image_type, proj_name, cred_path)
 
     def __categoryRecievedCallback(self, data):
@@ -99,30 +101,36 @@ class DataCollection:
         Args:
             data ([ROS Image])
         """
-        rospy.logdebug('Recieved Image')
-        try:
-            cv_image = CvBridge().imgmsg_to_cv2(data, 'passthrough')
-        except CvBridgeError as e:
-            rospy.logerr(e)
-        if self.crop_q:
-            cv_image = cv_image[
-                int(self.crop_size.split(',')[1]):
-                int(self.crop_size.split(',')[1])+int(
-                    self.crop_size.split(',')[3]),
-                int(self.crop_size.split(',')[0]):int(
-                    self.crop_size.split(',')[0])
-                + int(self.crop_size.split(',')[2])]
-        if self.resize_q:
-            dim = (int(self.image_size.split(',')[0]), int(
-                self.image_size.split(',')[1]))
-            cv_image = cv2.resize(cv_image, dim, interpolation=cv2.INTER_AREA)
-        if self.grayscale:
-            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-        if self.category_param_valid or self.category_topic_valid:
-            self.uploader_obj.addToUploadQueue(
-                cv_image, self.camera_name, self.category)
+        if self.trigger_count % (self.triggers_to_ignore + 1) == 0:
+            rospy.loginfo('Recieved Image. Uploading Image')
+            self.trigger_count = 0
+            try:
+                cv_image = CvBridge().imgmsg_to_cv2(data, 'passthrough')
+            except CvBridgeError as e:
+                rospy.logerr(e)
+            if self.crop_q:
+                cv_image = cv_image[
+                    int(self.crop_size.split(',')[1]):
+                    int(self.crop_size.split(',')[1])+int(
+                        self.crop_size.split(',')[3]),
+                    int(self.crop_size.split(',')[0]):int(
+                        self.crop_size.split(',')[0])
+                    + int(self.crop_size.split(',')[2])]
+            if self.resize_q:
+                dim = (int(self.image_size.split(',')[0]), int(
+                    self.image_size.split(',')[1]))
+                cv_image = cv2.resize(cv_image, dim, interpolation=cv2.INTER_AREA)
+            if self.grayscale:
+                cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+            rospy.loginfo('Uploading Image')
+            if self.category_param_valid or self.category_topic_valid:
+                self.uploader_obj.addToUploadQueue(
+                    cv_image, self.camera_name, self.category)
+            else:
+                self.uploader_obj.addToUploadQueue(cv_image, self.camera_name)
         else:
-            self.uploader_obj.addToUploadQueue(cv_image, self.camera_name)
+            rospy.loginfo('Recieved Image. Uploading Image in next '+str(self.triggers_to_ignore - self.trigger_count + 1)+' triggers')
+        self.trigger_count += 1
 
 
 if __name__ == '__main__':
