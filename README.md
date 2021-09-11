@@ -6,8 +6,7 @@
 1. Clone [robro_cloud](https://github.com/hs29590/robro_cloud)
 2. Install packages as mentioned in [Readme](https://github.com/hs29590/robro_cloud/blob/main/README.md) .
 3. install robroCloud as mentioned in [Readme](https://github.com/hs29590/robro_cloud/blob/main/README.md) .
-4. Create role and service account. and download JSON. 
-https://docs.google.com/document/d/1WtwhxfyTrMaWV6cSIFOlwGeqxoYtF8q0I7Wr_UMoSdM/edit
+4. Create role and service account. and download JSON [here](https://docs.google.com/document/d/1WtwhxfyTrMaWV6cSIFOlwGeqxoYtF8q0I7Wr_UMoSdM/edit) .
 5. Clone [robro_image_saver](https://github.com/hs29590/robro_image_saver)
 6. Edit its [launch](https://github.com/hs29590/robro_image_saver/blob/main/launch/dataCollection.launch) file with required ros topic name and triggers to ignore etc.
 7. Launch!
